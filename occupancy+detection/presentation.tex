@@ -1,0 +1,367 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{amsmath, amssymb}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\definecolor{usdred}{RGB}{161,7,43}
+\definecolor{darkgray}{RGB}{45,45,45}
+
+\usetheme{Madrid}
+\usecolortheme{default}
+
+\setbeamercolor{palette primary}{bg=usdred,fg=white}
+\setbeamercolor{palette secondary}{bg=usdred,fg=white}
+\setbeamercolor{palette tertiary}{bg=darkgray,fg=white}
+\setbeamercolor{structure}{fg=usdred}
+\setbeamercolor{frametitle}{bg=usdred,fg=white}
+\setbeamercolor{title}{fg=usdred}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{caption}[numbered]
+
+\graphicspath{{outputs/figures/}{./}}
+
+\title[Room Occupancy Detection]{Room Occupancy Detection Using Environmental Sensor Data}
+\author[Benjamin van Rhee]{Benjamin van Rhee}
+\institute[USD]{Department of Computer Science\\University of South Dakota\\CSC 444}
+\date{Spring 2026}
+
+\begin{document}
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+\begin{frame}{Project Overview}
+    \begin{itemize}
+        \item Goal: predict whether a room is occupied using environmental sensor data.
+        \item Dataset: UCI Occupancy Detection dataset.
+        \item Task type: supervised binary classification.
+        \item Models compared:
+        \begin{itemize}
+            \item Logistic Regression
+            \item Random Forest
+        \end{itemize}
+        \item Main result: scaled Logistic Regression performed best overall.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Why Occupancy Detection Matters}
+    \begin{itemize}
+        \item Smart buildings need reliable occupancy estimates.
+        \item Occupancy information can improve:
+        \begin{itemize}
+            \item lighting control
+            \item heating and cooling
+            \item ventilation
+            \item energy efficiency
+        \end{itemize}
+        \item Environmental sensors are less invasive than cameras.
+        \item This makes the problem useful for offices, schools, and homes.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Dataset}
+    \begin{itemize}
+        \item Source: UCI Machine Learning Repository.
+        \item Total observations: 20,560.
+        \item Target variable: \texttt{Occupancy}.
+        \item Sensor features:
+        \begin{itemize}
+            \item Temperature
+            \item Humidity
+            \item Light
+            \item CO$_2$
+            \item HumidityRatio
+        \end{itemize}
+        \item The timestamp column was parsed but not used as a model feature.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Dataset Splits}
+    \begin{table}
+        \centering
+        \caption{Predefined Dataset Splits}
+        \begin{tabular}{lr}
+            \toprule
+            Split & Rows \\
+            \midrule
+            Training & 8,143 \\
+            Validation & 2,665 \\
+            Final holdout test & 9,752 \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+    \vspace{0.3cm}
+    The validation split was used for model comparison. The final holdout test split was used only for final evaluation.
+\end{frame}
+
+\begin{frame}{Class Balance}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.78\textwidth]{class_balance.png}
+        \caption{Class balance across training, validation, and test splits.}
+    \end{figure}
+\end{frame}
+
+\begin{frame}{Class Balance Counts}
+    \begin{table}
+        \centering
+        \caption{Occupancy Counts by Split}
+        \begin{tabular}{lrr}
+            \toprule
+            Split & Not Occupied & Occupied \\
+            \midrule
+            Training & 6,414 & 1,729 \\
+            Validation & 1,693 & 972 \\
+            Test & 7,703 & 2,049 \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+    \vspace{0.3cm}
+    Because the dataset is imbalanced, F1 score, precision, and recall are more informative than accuracy alone.
+\end{frame}
+
+\begin{frame}{Preprocessing}
+    \begin{itemize}
+        \item The first column in each data file was treated as a row index.
+        \item No missing values were found.
+        \item The same five sensor features were used for both algorithms.
+        \item Logistic Regression was tested with and without feature scaling.
+        \item Scaling was done inside a scikit-learn pipeline to avoid data leakage.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Modeling Approach}
+    \begin{columns}
+        \column{0.48\textwidth}
+        \textbf{Logistic Regression}
+        \begin{itemize}
+            \item Simple baseline model.
+            \item Fast to train.
+            \item Easy to interpret.
+            \item Works well when classes are close to linearly separable.
+        \end{itemize}
+
+        \column{0.48\textwidth}
+        \textbf{Random Forest}
+        \begin{itemize}
+            \item Ensemble of decision trees.
+            \item Can model nonlinear patterns.
+            \item Provides feature importance.
+            \item More complex than Logistic Regression.
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Evaluation Metrics}
+    \begin{itemize}
+        \item Accuracy: overall proportion of correct predictions.
+        \item Precision: how many predicted occupied cases were actually occupied.
+        \item Recall: how many actual occupied cases were correctly detected.
+        \item F1 score: balance between precision and recall.
+        \item Confusion matrix: shows false positives and false negatives directly.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Exploratory Data Analysis}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.72\textwidth]{correlation_heatmap.png}
+        \caption{Feature correlation heatmap.}
+    \end{figure}
+\end{frame}
+
+\begin{frame}{EDA Takeaways}
+    \begin{itemize}
+        \item Light has the strongest relationship with occupancy.
+        \item CO$_2$ also has a meaningful relationship with occupancy.
+        \item Feature scales differ significantly.
+        \item Example: Light ranges from 0 to 1546.333, while HumidityRatio stays near 0.004.
+        \item This supports testing feature scaling for Logistic Regression.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Validation Results}
+    \begin{table}
+        \centering
+        \caption{Validation Metrics}
+        \begin{tabular}{lrrrr}
+            \toprule
+            Model & Accuracy & Precision & Recall & F1 \\
+            \midrule
+            Logistic Regression scaled & 0.9771 & 0.9470 & 0.9928 & 0.9694 \\
+            Logistic Regression unscaled & 0.9764 & 0.9469 & 0.9907 & 0.9683 \\
+            Random Forest & 0.9501 & 0.9458 & 0.9156 & 0.9305 \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+    \vspace{0.2cm}
+    Scaled Logistic Regression had the best validation F1 score.
+\end{frame}
+
+\begin{frame}{Validation Confusion Matrices}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.47\textwidth]{validation_confusion_logistic_regression.png}
+        \hfill
+        \includegraphics[width=0.47\textwidth]{validation_confusion_random_forest.png}
+        \caption{Validation confusion matrices: Logistic Regression and Random Forest.}
+    \end{figure}
+\end{frame}
+
+\begin{frame}{Validation Interpretation}
+    \begin{itemize}
+        \item Logistic Regression had much higher recall than Random Forest.
+        \item Logistic Regression validation confusion matrix:
+        \begin{itemize}
+            \item 54 false positives
+            \item 7 false negatives
+        \end{itemize}
+        \item Random Forest validation confusion matrix:
+        \begin{itemize}
+            \item 51 false positives
+            \item 82 false negatives
+        \end{itemize}
+        \item Random Forest missed more occupied cases on the validation split.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Final Holdout Test Results}
+    \begin{table}
+        \centering
+        \caption{Final Holdout Metrics}
+        \begin{tabular}{lrrrr}
+            \toprule
+            Model & Accuracy & Precision & Recall & F1 \\
+            \midrule
+            Logistic Regression scaled & 0.9925 & 0.9718 & 0.9932 & 0.9824 \\
+            Random Forest & 0.9867 & 0.9436 & 0.9961 & 0.9691 \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+    \vspace{0.2cm}
+    The final test results confirmed that scaled Logistic Regression was the strongest overall model.
+\end{frame}
+
+\begin{frame}{Holdout Confusion Matrices}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.47\textwidth]{test_confusion_logistic_regression.png}
+        \hfill
+        \includegraphics[width=0.47\textwidth]{test_confusion_random_forest.png}
+        \caption{Holdout confusion matrices: Logistic Regression and Random Forest.}
+    \end{figure}
+\end{frame}
+
+\begin{frame}{Holdout Interpretation}
+    \begin{itemize}
+        \item Logistic Regression made fewer total errors on the holdout test set.
+        \item Logistic Regression:
+        \begin{itemize}
+            \item 59 false positives
+            \item 14 false negatives
+        \end{itemize}
+        \item Random Forest:
+        \begin{itemize}
+            \item 122 false positives
+            \item 8 false negatives
+        \end{itemize}
+        \item Random Forest had slightly higher recall, but lower precision and lower F1.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Random Forest Feature Importance}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.78\textwidth]{random_forest_feature_importance.png}
+        \caption{Random Forest feature importance.}
+    \end{figure}
+\end{frame}
+
+\begin{frame}{Most Important Features}
+    \begin{table}
+        \centering
+        \caption{Random Forest Feature Importance}
+        \begin{tabular}{lr}
+            \toprule
+            Feature & Importance \\
+            \midrule
+            Light & 0.6127 \\
+            CO$_2$ & 0.2272 \\
+            Temperature & 0.0962 \\
+            HumidityRatio & 0.0404 \\
+            Humidity & 0.0235 \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+    \vspace{0.2cm}
+    Light and CO$_2$ were the strongest predictors of occupancy.
+\end{frame}
+
+\begin{frame}{Main Findings}
+    \begin{itemize}
+        \item Scaled Logistic Regression was the best overall model.
+        \item The final holdout F1 score was 0.9824.
+        \item Random Forest performed well, but did not outperform Logistic Regression.
+        \item Light and CO$_2$ were the most important sensor signals.
+        \item A simple model was enough for this dataset.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Limitations}
+    \begin{itemize}
+        \item Only two algorithms were compared.
+        \item The timestamp was not engineered into time-based features.
+        \item The results come from one dataset and one room environment.
+        \item More testing would be needed before deploying the model in other buildings.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Future Work}
+    \begin{itemize}
+        \item Add time-based features such as hour of day.
+        \item Compare more algorithms, such as SVM or Gradient Boosting.
+        \item Tune Random Forest hyperparameters more deeply.
+        \item Test the model on other rooms or buildings.
+        \item Explore real-time IoT deployment.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Conclusion}
+    \begin{itemize}
+        \item Room occupancy can be predicted accurately using environmental sensor data.
+        \item The best model was scaled Logistic Regression.
+        \item Final holdout F1 score: \textbf{0.9824}.
+        \item Light and CO$_2$ were the strongest indicators of occupancy.
+        \item This supports non-invasive occupancy detection for smart-building applications.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{References}
+    \small
+    \begin{enumerate}
+        \item Candanedo, L. M., \& Feldheim, V. (2016). Accurate occupancy detection of an office room from light, temperature, humidity and CO$_2$ measurements using statistical learning models. \textit{Energy and Buildings, 112}, 28--39.
+        \item UCI Machine Learning Repository. Occupancy Detection Data Set.
+        \item Zhang, W., Han, K., Costa, G., \& Li, J. (2022). A review on occupancy prediction through machine learning for enhancing energy efficiency, air quality and thermal comfort in the built environment. \textit{Renewable and Sustainable Energy Reviews}.
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}
+    \centering
+    \Huge Questions?
+\end{frame}
+
+\end{document}
